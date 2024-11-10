@@ -1,0 +1,67 @@
+version: "3.9"
+
+services:
+  flask_app:
+    container_name: flask_app
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "4000:4000"
+    environment:
+      - FLASK_ENV=development
+      - SQLALCHEMY_DATABASE_URI=postgresql://postgres:postgres@flask_db:5432/postgres
+      - FLASK_APP=app.py  # Pfad zum App-Startpunkt relativ zum Arbeitsverzeichnis in ./backend
+      - FLASK_RUN_PORT=4000
+    volumes:
+      - ./backend:/app  # Relativer Pfad für mehr Portabilität
+    depends_on:
+      - flask_db
+    networks:
+      - project_network
+  
+  frontend:
+    container_name: frontend
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - NODE_ENV=development
+    depends_on:
+      - flask_app
+    networks:
+      - project_network
+
+  flask_db:
+    container_name: flask_db
+    image: postgres:12
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_DB=postgres
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - project_network
+
+  pgadmin:
+    container_name: pgadmin
+    image: dpage/pgadmin4:6
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=admin@email.com
+      - PGADMIN_DEFAULT_PASSWORD=admin
+    ports:
+      - "5051:5050"
+    networks:
+      - project_network
+
+volumes:
+  pgdata:
+
+networks:
+  project_network:
+    driver: bridge
